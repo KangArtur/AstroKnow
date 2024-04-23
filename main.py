@@ -4,10 +4,11 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField
 from wtforms import BooleanField, SubmitField
 from wtforms.validators import DataRequired
-
+import requests
 from data import db_session
 from data.users import User
-from data.news import News
+from data.explorations import Exploration
+from data.comments import Comments
 from forms.user import RegisterForm
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 
@@ -15,9 +16,11 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 login_manager = LoginManager()
 login_manager.init_app(app)
+nasa_request = "https://api.nasa.gov/planetary/apod?api_key="
+nasa_api_key = "f4lJMtfmic5Ietnc3qee4EzSfVccklD8SfqDdCGX"
 
 
-class NewsForm(FlaskForm):
+class ExplorationsForm(FlaskForm):
     title = StringField('Заголовок', validators=[DataRequired()])
     content = TextAreaField("Содержание")
     is_private = BooleanField("Личное")
@@ -40,13 +43,8 @@ def load_user(user_id):
 @app.route("/")
 def index():
     db_sess = db_session.create_session()
-    news = db_sess.query(News).filter(News.is_private != True)
-    if current_user.is_authenticated:
-        news = db_sess.query(News).filter(
-            (News.user == current_user) | (News.is_private != True))
-    else:
-        news = db_sess.query(News).filter(News.is_private != True)
-    return render_template("index.html", news=news)
+    explorations = db_sess.query(Exploration).all()
+    return render_template("index.html", explorations=explorations)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -64,71 +62,112 @@ def login():
     return render_template('login.html', title='Авторизация', form=form)
 
 
-@app.route('/news',  methods=['GET', 'POST'])
+@app.route('/explorations',  methods=['GET', 'POST'])
 @login_required
-def add_news():
-    form = NewsForm()
+def add_explorations():
+    form = ExplorationsForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
-        news = News()
-        news.title = form.title.data
-        news.content = form.content.data
-        news.is_private = form.is_private.data
-        current_user.news.append(news)
+        explorations = Exploration()
+        explorations.title = form.title.data
+        explorations.content = form.content.data
+        explorations.is_private = form.is_private.data
+        current_user.explorations.append(explorations)
         db_sess.merge(current_user)
         db_sess.commit()
         return redirect('/')
-    return render_template('news.html', title='Добавление новости',
+    return render_template('explorations.html', title='Добавление исследования',
                            form=form)
 
 
-@app.route('/news/<int:id>', methods=['GET', 'POST'])
+@app.route('/apod',  methods=['GET', 'POST'])
 @login_required
-def edit_news(id):
-    form = NewsForm()
+def view_apod():
+    response = requests.get(nasa_request + nasa_api_key).json()
+    APOD = {"img_url": response["url"],
+            "autor": response["copyright"],
+            "title": response["title"],
+            "date": response["date"],
+            "explanation": response["explanation"]
+            }
+    print(response)
+    return render_template('apod.html', APOD=APOD, title='Картинка дня')
+
+
+@app.route('/explorations/<int:id>', methods=['GET', 'POST'])
+@login_required
+def explorations(id):
+    form = ExplorationsForm()
     if request.method == "GET":
         db_sess = db_session.create_session()
-        news = db_sess.query(News).filter(News.id == id,
-                                          News.user == current_user
+        explorations = db_sess.query(Exploration).filter(Exploration.id == id,
+                                          Exploration.user == current_user
                                           ).first()
-        if news:
-            form.title.data = news.title
-            form.content.data = news.content
-            form.is_private.data = news.is_private
+        if explorations:
+            form.title.data = explorations.title
+            form.content.data = explorations.content
         else:
             abort(404)
     if form.validate_on_submit():
         db_sess = db_session.create_session()
-        news = db_sess.query(News).filter(News.id == id,
-                                          News.user == current_user
+        explorations = db_sess.query(Exploration).filter(Exploration.id == id,
+                                          Exploration.user == current_user
                                           ).first()
-        if news:
-            news.title = form.title.data
-            news.content = form.content.data
-            news.is_private = form.is_private.data
+        if explorations:
+            explorations.title = form.title.data
+            explorations.content = form.content.data
             db_sess.commit()
             return redirect('/')
         else:
             abort(404)
-    return render_template('news.html',
-                           title='Редактирование новости',
+    return render_template('explorations.html',
+                           title='Редактирование исследования',
                            form=form
                            )
 
 
-@app.route('/news_delete/<int:id>', methods=['GET', 'POST'])
+@app.route('/explorations_delete/<int:id>', methods=['GET', 'POST'])
 @login_required
-def news_delete(id):
+def explorations_delete(id):
     db_sess = db_session.create_session()
-    news = db_sess.query(News).filter(News.id == id,
-                                      News.user == current_user
+    explorations = db_sess.query(Exploration).filter(Exploration.id == id,
+                                      Exploration.user == current_user
                                       ).first()
-    if news:
-        db_sess.delete(news)
+    if explorations:
+        db_sess.delete(explorations)
         db_sess.commit()
     else:
         abort(404)
     return redirect('/')
+
+
+@app.route('/explorations_comments/<int:id>', methods=['GET', 'POST'])
+@login_required
+def explorations_comments(id):
+    db_sess = db_session.create_session()
+    explorations = db_sess.query(Exploration).filter(Exploration.id == id,
+                                                     Exploration.user == current_user
+                                                     ).first()
+    comments = db_sess.query(Comments).filter(Comments.user_id == explorations.id)
+    return render_template('comments.html',
+                           title='Комментарии к исследованию', explorations=explorations,
+                           comments=comments)
+
+
+@app.route('/comments',  methods=['GET', 'POST'])
+@login_required
+def add_explorations():
+    form = ExplorationsForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        comment = Comments()
+        comment.content = form.content.data
+        current_user.comm.append(explorations)
+        db_sess.merge(current_user)
+        db_sess.commit()
+        return redirect('/')
+    return render_template('explorations.html', title='Добавление исследования',
+                           form=form)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -146,6 +185,8 @@ def reqister():
                                    message="Такой пользователь уже есть")
         user = User(
             name=form.name.data,
+            lastname=form.lastname.data,
+            occupation=form.occupation.data,
             email=form.email.data,
             about=form.about.data
         )

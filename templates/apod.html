@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Астрономическая картинка дня</h1>
+<h2>{{APOD["title"]}}</h2>
+<img src={{APOD["img_url"]}} width="300" height="300">
+<h4>
+    Автор: {{APOD["autor"]}} {{APOD["date"]}}
+</h4>
+<div>
+    {{APOD["explanation"]}}
+</div>
+{% endblock %}

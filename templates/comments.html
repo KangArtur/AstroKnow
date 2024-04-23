@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Комментарии к исследованию</h1>
+<h1>"{{ explorations.title }}"</h1>
+<h2>{{ explorations.content }}</h2>
+{% for item in comments%}
+<div>
+    <h3>{{ item.content }}</h3>
+     <a href="/comments/{{ item.id }}" class="btn btn-primary">
+         Изменить
+     </a>
+     <a href="/comments_delete/{{ item.id }}" class="btn btn-primary">
+        Удалить
+    </a>
+ </div>
+{% endfor %}
+<a href="/comments" class="btn btn-primary">
+    Комментировать
+</a>
+{% endblock %}

@@ -41,6 +41,24 @@
         {% endfor %}
     </p>
     <p>
+        {{ form.lastname.label }}<br>
+        {{ form.lastname(class="form-control") }}<br>
+        {% for error in form.lastname.errors %}
+            <p class="alert alert-danger" role="alert">
+                {{ error }}
+            </p>
+        {% endfor %}
+    </p>
+    <p>
+        {{ form.occupation.label }}<br>
+        {{ form.occupation }}<br>
+        {% for error in form.occupation.errors %}
+            <p class="alert alert-danger" role="alert">
+                {{ error }}
+            </p>
+        {% endfor %}
+    </p>
+    <p>
         {{ form.about.label }}<br>
         {{ form.about(class="form-control") }}<br>
         {% for error in form.about.errors %}

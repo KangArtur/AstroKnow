@@ -7,21 +7,41 @@
           href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
           integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
           crossorigin="anonymous">
+    <link rel="stylesheet"
+          href={{url_for('static', filename='css/button.css')}}>
     <title>{{title}}</title>
 </head>
 <body>
 <header>
-    <nav class="navbar navbar-light bg-light">
-        <a class="navbar-brand" href="#">AstroKnow</a>
-        {% if current_user.is_authenticated %}
-            <a class="navbar-brand" href="/logout">{{ current_user.name }}</a>
-            <a href="news" class="btn btn-secondary">Добавить новость</a>
-        {% else %}
-            <p>
-                <a class="btn btn-primary " href="/register">Зарегистрироваться</a>
-                <a class="btn btn-success" href="/login">Войти</a>
-            </p>
-{% endif %}
+    <nav class="navbar navbar-expand-lg" style="background-color: #4315A6">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <img src="{{url_for('static', filename='images/AstroKnowLogo.png')}}" width="200" height="60" alt="">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="navbar-collapse collapse show" id="mainNavbar">
+                <ui class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        {% if current_user.is_authenticated %}
+                            <a class="navbar-brand" href="/logout">{{ current_user.name }} {{ current_user.lastname }},  {{ current_user.occupation }}</a>
+                            {% if current_user.occupation == "Астроном" %}
+                                <a href="explorations" class="btn btn-outline-light">Добавить исследование</a>
+                            {% else %}
+                                <a href="questions" class="btn btn-outline-light">Добавить вопрос</a>
+                            {% endif %}
+                        <a href="/apod" class="btn btn-outline-light">Картинка дня</a>
+                        {% else %}
+                            <p>
+                                <a class="btn btn-outline-light" href="/register">Зарегистрироваться </a>
+                                <a class="btn btn-outline-light" href="/login">Войти </a>
+                            </p>
+                        {% endif %}
+                    </li>
+                </ui>>
+            </div>
+        </div>
     </nav>
 </header>
 <!-- Begin page content -->
