@@ -7,8 +7,6 @@
           href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
           integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
           crossorigin="anonymous">
-    <link rel="stylesheet"
-          href={{url_for('static', filename='css/button.css')}}>
     <title>{{title}}</title>
 </head>
 <body>
@@ -27,7 +25,7 @@
                         {% if current_user.is_authenticated %}
                             <a class="navbar-brand" href="/logout">{{ current_user.name }} {{ current_user.lastname }},  {{ current_user.occupation }}</a>
                             <a href="/" class="btn btn-outline-light">Исследования</a>
-                            <a href="questions" class="btn btn-outline-light">Вопросы</a>
+                            <a href="/questions" class="btn btn-outline-light">Вопросы</a>
                         {% else %}
                             <p>
                                 <a class="btn btn-outline-light" href="/register">Зарегистрироваться </a>
@@ -36,10 +34,12 @@
                         {% endif %}
                         <a href="/apod" class="btn btn-outline-light">Картинка дня</a>
                         <a href="/rover" class="btn btn-outline-light">Фото с марсохода</a>
-                        <form action="/search" class="d-flex" type="search" method="POST">
-                            <input class="form-control me-2" type="text" name="query" placeholder="Найдите космическую картинку">
-                            <button class="btn btn-outline-light" type="submit">Поиск</button>
-                        </form>
+                        {% if current_user.is_authenticated %}
+                            <form action="/search" class="d-flex" type="search" method="POST">
+                                <input class="form-control me-2" type="text" name="query" placeholder="Найдите космическую картинку">
+                                <button class="btn btn-outline-light" type="submit">Поиск</button>
+                            </form>
+                        {% endif %}
                     </li>
                 </ui>>
             </div>

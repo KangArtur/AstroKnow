@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Ответы на вопрос</h1>
+<h1>"{{ questions.title }}"</h1>
+<h3>{{ questions.content }}</h3>
+{% if current_user.is_authenticated %}
+    <a href="/questions_answers/{{ id }}/add_answer" class="btn btn-primary">
+        Ответить
+    </a>
+{% endif %}
+<br><br/>
+{% for item in answers %}
+<div>
+    {% if id == item.question_id %}
+    <div><b>{{ item.content }}</b></div>
+        <div>{{ item.user.name }} ({{ item.user.occupation }}) - {{ item.created_date }}</div>
+        {% if current_user.is_authenticated and current_user == item.user %}
+            <a href="/questions_answers/{{ id }}/edit_answers/{{ item.id }}" class="btn btn-primary">
+                Изменить
+            </a>
+            <a href="/questions_answers/{{ id }}/delete_answers/{{ item.id }}" class="btn btn-primary">
+                Удалить
+            </a>
+        {% endif %}
+        <br><br/>
+    {% endif %}
+ </div>
+{% endfor %}
+{% endblock %}

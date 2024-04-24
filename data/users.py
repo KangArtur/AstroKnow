@@ -22,6 +22,8 @@ class User(SqlAlchemyBase, UserMixin):
                                      default=datetime.datetime.now)
     explorations = orm.relationship("Exploration", back_populates="user")
     comments = orm.relationship("Comments", back_populates="user")
+    questions = orm.relationship("Question", back_populates="user")
+    answers = orm.relationship("Answer", back_populates="user")
 
     def __repr__(self):
         return f"{self.name} {self.email}\n{self.about}\n"

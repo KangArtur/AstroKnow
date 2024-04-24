@@ -7,6 +7,8 @@ from wtforms.validators import DataRequired
 import requests
 from data import db_session
 from data.users import User
+from data.questions import Question
+from data.answers import Answer
 from data.explorations import Exploration
 from data.comments import Comments
 from forms.user import RegisterForm
@@ -16,19 +18,33 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+"""Всё необходимое для подключения к NASA API"""
 nasa_request = "https://api.nasa.gov/planetary/apod?api_key="
 nasa_api_key = "f4lJMtfmic5Ietnc3qee4EzSfVccklD8SfqDdCGX"
 nasa_mars_api_key = f"https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos?sol=1000&api_key="
 
 
+"""Формы"""
 class ExplorationsForm(FlaskForm):
     title = StringField('Заголовок', validators=[DataRequired()])
     content = TextAreaField("Содержание")
     submit = SubmitField('Применить')
 
 
+class QuestionsForm(FlaskForm):
+    title = StringField('Тема', validators=[DataRequired()])
+    content = TextAreaField("Содержание")
+    submit = SubmitField('Применить')
+
+
 class CommentsForm(FlaskForm):
     content = TextAreaField("Введите комментарий", validators=[DataRequired()])
+    submit = SubmitField('Применить')
+
+
+class AnswersForm(FlaskForm):
+    content = TextAreaField("Введите ответ", validators=[DataRequired()])
     submit = SubmitField('Применить')
 
 
@@ -45,6 +61,7 @@ def load_user(user_id):
     return db_sess.query(User).get(user_id)
 
 
+"""Главная страница"""
 @app.route("/")
 def index():
     db_sess = db_session.create_session()
@@ -52,6 +69,7 @@ def index():
     return render_template("index.html", explorations=explorations)
 
 
+"""Регистрация"""
 @app.route('/register', methods=['GET', 'POST'])
 def reqister():
     form = RegisterForm()
@@ -79,6 +97,7 @@ def reqister():
     return render_template('register.html', title='Регистрация', form=form)
 
 
+"""Авторизация"""
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
@@ -101,6 +120,7 @@ def logout():
     return redirect("/")
 
 
+"""Страница с астрономической картинкой дня"""
 @app.route('/apod',  methods=['GET'])
 def view_apod():
     response = requests.get(nasa_request + nasa_api_key).json()
@@ -113,6 +133,7 @@ def view_apod():
     return render_template('apod.html', APOD=APOD, title='Картинка дня')
 
 
+"""Страница с фотографиями с марсохода"""
 @app.route("/rover", methods=["GET"])
 def rover():
     response = requests.get(nasa_mars_api_key + nasa_api_key).json()
@@ -120,6 +141,7 @@ def rover():
     return render_template("rover.html", urls=urls, title="Фото с марсохода")
 
 
+"""Функции, относящиеся к исследованиям и комментариям"""
 @app.route('/explorations',  methods=['GET', 'POST'])
 @login_required
 def add_explorations():
@@ -254,6 +276,7 @@ def delete_comments(id, exp_id):
     return redirect(f'/explorations_comments/{exp_id}')
 
 
+"""Поиск картинок с помощью NASA API"""
 @app.route('/search', methods=['POST'])
 def search():
     query = request.form['query']
@@ -265,12 +288,153 @@ def search():
         except:
             pass
     urls = ["".join(i.split()) for i in urls]
-    print(urls)
     return render_template("search.html", urls=urls, title=f"Поиск по зарпросу {query}", query=query)
 
 
+"""Функции, относящиеся к вопросам и ответам"""
+@app.route("/questions")
+def questions():
+    db_sess = db_session.create_session()
+    questions = db_sess.query(Question).all()
+    return render_template("questions.html", questions=questions, title="Вопросы")
+
+
+@app.route('/add_question',  methods=['GET', 'POST'])
+@login_required
+def add_question():
+    form = QuestionsForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        questions = Question()
+        questions.title = form.title.data
+        questions.content = form.content.data
+        current_user.questions.append(questions)
+        db_sess.merge(current_user)
+        db_sess.commit()
+        return redirect('/questions')
+    return render_template('add_question.html', title='Задать вопрос',
+                           form=form)
+
+
+@app.route('/questions/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_questions(id):
+    form = QuestionsForm()
+    if request.method == "GET":
+        db_sess = db_session.create_session()
+        questions = db_sess.query(Question).filter(Question.id == id,
+                                          Question.user == current_user
+                                          ).first()
+        if questions:
+            form.title.data = questions.title
+            form.content.data = questions.content
+        else:
+            abort(404)
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        questions = db_sess.query(Question).filter(Question.id == id,
+                                          Question.user == current_user
+                                          ).first()
+        if questions:
+            questions.title = form.title.data
+            questions.content = form.content.data
+            db_sess.commit()
+            return redirect('/questions')
+        else:
+            abort(404)
+    return render_template('add_question.html',
+                           title='Редактирование вопросы',
+                           form=form
+                           )
+
+
+@app.route('/questions_delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+def questions_delete(id):
+    db_sess = db_session.create_session()
+    questions = db_sess.query(Question).filter(Question.id == id,
+                                      Question.user == current_user
+                                      ).first()
+    if questions:
+        db_sess.delete(questions)
+        db_sess.commit()
+    else:
+        abort(404)
+    return redirect('/questions')
+
+
+@app.route('/questions_answers/<int:id>', methods=['GET', 'POST'])
+def questions_answers(id):
+    db_sess = db_session.create_session()
+    questions = db_sess.query(Question).filter(Question.id == id).first()
+    answers = db_sess.query(Answer).filter(Answer.question_id == questions.id)
+    return render_template('answers.html',
+                           title='Ответы на вопрос', questions=questions,
+                           answers=answers, id=id)
+
+
+@app.route('/questions_answers/<int:id>/add_answer',  methods=['GET', 'POST'])
+@login_required
+def add_answer(id):
+    form = AnswersForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        answer = Answer()
+        answer.content = form.content.data
+        answer.question_id = id
+        current_user.answers.append(answer)
+        db_sess.merge(current_user)
+        db_sess.commit()
+        return redirect(f'/questions_answers/{id}')
+    return render_template('add_answer.html', title='Добавление ответа', id=id,
+                           form=form)
+
+
+@app.route('/questions_answers/<int:que_id>/edit_answers/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_answers(id, que_id):
+    form = AnswersForm()
+    if request.method == "GET":
+        db_sess = db_session.create_session()
+        answers = db_sess.query(Answer).filter(Answer.id == id,
+                                          Answer.user == current_user).first()
+        if answers:
+            form.content.data = answers.content
+        else:
+            abort(404)
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        answers = db_sess.query(Answer).filter(Answer.id == id,
+                                          Answer.user == current_user).first()
+        if answers:
+            answers.content = form.content.data
+            db_sess.commit()
+            return redirect(f'/questions_answers/{que_id}')
+        else:
+            abort(404)
+    return render_template('add_answer.html',
+                           title='Редактирование ответа',
+                           form=form
+                           )
+
+
+@app.route('/questions_answers/<int:que_id>/delete_answers/<int:id>', methods=['GET', 'POST'])
+@login_required
+def delete_answers(id, que_id):
+    db_sess = db_session.create_session()
+    answers = db_sess.query(Answer).filter(Answer.id == id,
+                                      Answer.user == current_user
+                                      ).first()
+    if answers:
+        db_sess.delete(answers)
+        db_sess.commit()
+    else:
+        abort(404)
+    return redirect(f'/questions_answers/{que_id}')
+
+
 def main():
-    db_session.global_init("db/explorations.db")
+    db_session.global_init("db/data.db")
     app.run()
 
 

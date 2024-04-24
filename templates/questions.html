@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Вопросы гостей</h1>
+{% if current_user.occupation == "Гость" %}
+    <a href="/add_question" class="btn btn-primary">Задать вопрос</a>
+{% endif %}
+{% for item in questions%}
+<div class="col-md6 border rounded">
+    <h2>{{item.title}}</h2>
+    <div>
+        {{item.content}}
+    </div>
+    <div>
+        {{item.user.name}} {{item.user.lastname}}
+        {{item.created_date}}
+    </div>
+    {% if current_user.is_authenticated and current_user == item.user %}
+        <div>
+            <a href="/questions/{{ item.id }}" class="btn btn-primary">
+                Изменить
+            </a>
+            <a href="/questions_delete/{{ item.id }}" class="btn btn-primary">
+                Удалить
+            </a>
+        </div>
+    {% endif %}
+    <a href="/questions_answers/{{ item.id }}" class="btn btn-primary">
+        Ответы
+    </a>
+</div>
+{% endfor %}
+{% endblock %}
