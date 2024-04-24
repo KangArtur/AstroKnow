@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Фотографии с марсохода</h1>
+{% for url in urls %}
+    <img src={{url}} width="300" height="300">
+    <br><br/>
+{% endfor %}
+{% endblock %}

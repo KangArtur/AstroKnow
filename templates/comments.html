@@ -3,19 +3,28 @@
 {% block content %}
 <h1>Комментарии к исследованию</h1>
 <h1>"{{ explorations.title }}"</h1>
-<h2>{{ explorations.content }}</h2>
-{% for item in comments%}
-<div>
-    <h3>{{ item.content }}</h3>
-     <a href="/comments/{{ item.id }}" class="btn btn-primary">
-         Изменить
-     </a>
-     <a href="/comments_delete/{{ item.id }}" class="btn btn-primary">
-        Удалить
+<h3>{{ explorations.content }}</h3>
+{% if current_user.is_authenticated %}
+    <a href="/explorations_comments/{{ id }}/add_comment" class="btn btn-primary">
+        Комментировать
     </a>
+{% endif %}
+<br><br/>
+{% for item in comments %}
+<div>
+    {% if id == item.explorations_id %}
+    <div><b>{{ item.content }}</b></div>
+        <div>{{ item.user.name }} ({{ item.user.occupation }}) - {{ item.created_date }}</div>
+        {% if current_user.is_authenticated and current_user == item.user %}
+            <a href="/explorations_comments/{{ id }}/edit_comments/{{ item.id }}" class="btn btn-primary">
+                Изменить
+            </a>
+            <a href="/explorations_comments/{{ id }}/delete_comments/{{ item.id }}" class="btn btn-primary">
+                Удалить
+            </a>
+        {% endif %}
+        <br><br/>
+    {% endif %}
  </div>
 {% endfor %}
-<a href="/comments" class="btn btn-primary">
-    Комментировать
-</a>
 {% endblock %}
